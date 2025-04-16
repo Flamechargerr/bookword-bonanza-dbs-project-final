@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -28,7 +27,7 @@ const fetchAuthors = async () => {
     throw error;
   }
 
-  console.log("Authors data:", data);  // Add this to help debug
+  console.log("Authors data:", data);  // Detailed logging for debugging
 
   return data.map(author => ({
     id: author.id,
@@ -66,7 +65,8 @@ const Authors = () => {
   const [selectedAuthor, setSelectedAuthor] = useState<null | any>(null);
   const { data: authors, isLoading, error } = useQuery({
     queryKey: ['authors'],
-    queryFn: fetchAuthors
+    queryFn: fetchAuthors,
+    retry: 2
   });
 
   if (isLoading) return (
@@ -120,69 +120,77 @@ const Authors = () => {
           </p>
         </motion.section>
 
-        <motion.div 
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-        >
-          {authors?.map((author) => (
-            <motion.div 
-              key={author.id}
-              variants={item}
-              className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer"
-              onClick={() => setSelectedAuthor(author)}
-            >
-              <div className="bg-gradient-to-r from-purple-500 to-indigo-600 h-12"></div>
-              <div className="p-6">
-                <div className="flex items-center mb-4">
-                  <div className="bg-purple-100 rounded-full p-3 mr-4">
-                    <User className="h-6 w-6 text-purple-700" />
+        {authors && authors.length > 0 ? (
+          <motion.div 
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          >
+            {authors.map((author) => (
+              <motion.div 
+                key={author.id}
+                variants={item}
+                className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer"
+                onClick={() => setSelectedAuthor(author)}
+              >
+                <div className="bg-gradient-to-r from-purple-500 to-indigo-600 h-12"></div>
+                <div className="p-6">
+                  <div className="flex items-center mb-4">
+                    <div className="bg-purple-100 rounded-full p-3 mr-4">
+                      <User className="h-6 w-6 text-purple-700" />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-800">{author.name}</h2>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-800">{author.name}</h2>
+                  
+                  <div className="flex items-center mt-4 text-gray-600 hover:text-purple-700 transition-colors cursor-pointer"
+                    onClick={() => {
+                      navigator.clipboard.writeText(author.contactDetails);
+                      toast.success(`Email copied: ${author.contactDetails}`);
+                    }}
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    <span className="text-sm">{author.contactDetails}</span>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <h3 className="font-medium text-gray-700 mb-2 flex items-center">
+                      <BookOpen className="h-4 w-4 mr-2 text-purple-700" />
+                      <span>Books ({author.books.length})</span>
+                    </h3>
+                    <ul className="space-y-1">
+                      {author.books.slice(0, 3).map((book) => (
+                        <li key={book.isbn} className="text-sm text-gray-600 pl-6 py-1 border-l-2 border-purple-100 hover:border-purple-500 transition-colors cursor-pointer">
+                          {book.title}
+                        </li>
+                      ))}
+                      {author.books.length > 3 && (
+                        <li className="text-xs text-purple-600 pl-6 font-medium">
+                          +{author.books.length - 3} more book(s)
+                        </li>
+                      )}
+                    </ul>
+                  </div>
                 </div>
-                
-                <div className="flex items-center mt-4 text-gray-600 hover:text-purple-700 transition-colors cursor-pointer"
-                  onClick={() => {
-                    navigator.clipboard.writeText(author.contactDetails);
-                    toast.success(`Email copied: ${author.contactDetails}`);
-                  }}
-                >
-                  <Mail className="h-4 w-4 mr-2" />
-                  <span className="text-sm">{author.contactDetails}</span>
-                </div>
-                
-                <div className="mt-6">
-                  <h3 className="font-medium text-gray-700 mb-2 flex items-center">
-                    <BookOpen className="h-4 w-4 mr-2 text-purple-700" />
-                    <span>Books ({author.books.length})</span>
-                  </h3>
-                  <ul className="space-y-1">
-                    {author.books.slice(0, 3).map((book) => (
-                      <li key={book.isbn} className="text-sm text-gray-600 pl-6 py-1 border-l-2 border-purple-100 hover:border-purple-500 transition-colors cursor-pointer">
-                        {book.title}
-                      </li>
-                    ))}
-                    {author.books.length > 3 && (
-                      <li className="text-xs text-purple-600 pl-6 font-medium">
-                        +{author.books.length - 3} more book(s)
-                      </li>
-                    )}
-                  </ul>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
+              </motion.div>
+            ))}
+          </motion.div>
+        ) : (
+          <div className="text-center py-12 bg-white/80 rounded-xl">
+            <BookOpen className="h-20 w-20 mx-auto text-purple-300 mb-4" />
+            <h3 className="text-2xl font-medium text-gray-600 mb-2">No authors found</h3>
+            <p className="text-gray-500">It seems there are no authors in the database</p>
+          </div>
+        )}
 
-      {selectedAuthor && (
-        <AuthorDetailsDialog
-          author={selectedAuthor}
-          isOpen={!!selectedAuthor}
-          onOpenChange={(open) => !open && setSelectedAuthor(null)}
-        />
-      )}
-    </main>
+        {selectedAuthor && (
+          <AuthorDetailsDialog
+            author={selectedAuthor}
+            isOpen={!!selectedAuthor}
+            onOpenChange={(open) => !open && setSelectedAuthor(null)}
+          />
+        )}
+      </main>
     </div>
   );
 };
