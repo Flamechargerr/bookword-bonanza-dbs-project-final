@@ -10,6 +10,8 @@ import { toast } from "sonner";
 
 const fetchAuthors = async () => {
   console.log("Fetching authors...");
+  
+  // Fetch authors with their books
   const { data, error } = await supabase
     .from('author')
     .select(`
@@ -17,9 +19,12 @@ const fetchAuthors = async () => {
       name,
       contact_details,
       author_book (
+        book_isbn,
         book (
           isbn,
-          name
+          name,
+          summary,
+          genre
         )
       )
     `);
@@ -29,21 +34,22 @@ const fetchAuthors = async () => {
     throw error;
   }
 
-  console.log("Authors data:", data);  // Detailed logging for debugging
+  console.log("Authors data from Supabase:", data);
   
   if (!data || data.length === 0) {
     console.warn("No authors found in the database");
   }
 
-  return data.map(author => ({
+  // Transform the data into the format expected by the component
+  return data?.map(author => ({
     id: author.id,
     name: author.name,
-    contactDetails: author.contact_details,
+    contactDetails: author.contact_details || 'No contact details',
     books: author.author_book?.map(ab => ({
-      isbn: ab.book.isbn,
-      title: ab.book.name
+      isbn: ab.book?.isbn || 'Unknown ISBN',
+      title: ab.book?.name || 'Unknown Title'
     })) || []
-  }));
+  })) || [];
 };
 
 const container = {

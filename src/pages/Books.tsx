@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Search, Filter, BookOpen, AlertCircle, RefreshCw, Sparkles } from 'lucide-react';
 import MainNav from "@/components/MainNav";
 import BookCard from "@/components/BookCard";
@@ -23,11 +22,17 @@ const fetchBooks = async () => {
       genre,
       image_url,
       author_book (
+        author_id,
         author (
+          id,
           name,
-          contact_details,
-          id
+          contact_details
         )
+      ),
+      books_read (
+        rating,
+        comment,
+        user_id
       )
     `);
 
@@ -36,101 +41,25 @@ const fetchBooks = async () => {
     throw error;
   }
 
-  console.log("Books fetched:", data);
+  console.log("Books data from Supabase:", data);
   
-  // If no books found, add more sample books
-  if (!data || data.length === 0) {
-    return [
-      {
-        isbn: "978-0451524935",
-        title: "1984",
-        author: "George Orwell",
-        rating: 4.7,
-        genre: "Dystopian Fiction",
-        imageUrl: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e",
-        summary: "A dystopian novel set in a totalitarian society led by Big Brother, where truth and history are manipulated by the ruling party."
-      },
-      {
-        isbn: "978-0061120084",
-        title: "To Kill a Mockingbird",
-        author: "Harper Lee",
-        rating: 4.8,
-        genre: "Classic",
-        imageUrl: "https://images.unsplash.com/photo-1544947950-fa07a98d237f",
-        summary: "Set in the American South during the 1930s, the story follows Scout Finch and her father, Atticus, who defends a Black man accused of a terrible crime."
-      },
-      {
-        isbn: "978-0307474278",
-        title: "The Da Vinci Code",
-        author: "Dan Brown",
-        rating: 4.5,
-        genre: "Thriller",
-        imageUrl: "https://images.unsplash.com/photo-1546521343-4eb2c01aa44b",
-        summary: "A thriller novel that follows symbologist Robert Langdon as he investigates a murder in the Louvre Museum and discovers a battle between the Priory of Sion and Opus Dei."
-      },
-      {
-        isbn: "978-0743273565",
-        title: "The Great Gatsby",
-        author: "F. Scott Fitzgerald",
-        rating: 4.3,
-        genre: "Classic",
-        imageUrl: "https://images.unsplash.com/photo-1541963463532-d68292c34b19",
-        summary: "Set in the Jazz Age, the novel explores themes of decadence, idealism, and the American Dream through the life of millionaire Jay Gatsby."
-      },
-      {
-        isbn: "978-0618640157",
-        title: "The Lord of the Rings",
-        author: "J.R.R. Tolkien",
-        rating: 4.9,
-        genre: "Fantasy",
-        imageUrl: "https://images.unsplash.com/photo-1491841550275-ad7854e35ca6",
-        summary: "An epic high-fantasy novel that follows hobbit Frodo Baggins as he embarks on a quest to destroy the One Ring and defeat the Dark Lord Sauron."
-      },
-      // Add 3 more books to ensure more than 5
-      {
-        isbn: "978-0062315007",
-        title: "The Alchemist",
-        author: "Paulo Coelho",
-        rating: 4.6,
-        genre: "Fiction",
-        imageUrl: "https://images.unsplash.com/photo-1519681393784-d120267933ba",
-        summary: "A mystical story of Santiago, an Andalusian shepherd boy who yearns to travel in search of a worldly treasure."
-      },
-      {
-        isbn: "978-0385421670",
-        title: "Fight Club",
-        author: "Chuck Palahniuk",
-        rating: 4.4,
-        genre: "Contemporary Fiction",
-        imageUrl: "https://images.unsplash.com/photo-1600783245891-47dd9c5e1225",
-        summary: "A dark, satirical novel about masculinity, consumerism, and identity in modern society."
-      },
-      {
-        isbn: "978-0156030658",
-        title: "One Hundred Years of Solitude",
-        author: "Gabriel García Márquez",
-        rating: 4.7,
-        genre: "Magical Realism",
-        imageUrl: "https://images.unsplash.com/photo-1541963463532-d68292c34b19",
-        summary: "A landmark novel of magical realism that chronicles the multi-generational story of the Buendía family."
-      }
-    ];
-  }
-
-  // Transform the data to match BookCard props
-  return data.map(book => ({
+  return data?.map(book => ({
     isbn: book.isbn,
     title: book.name,
     author: book.author_book?.map(ab => ab.author?.name).filter(Boolean).join(', ') || "Unknown Author",
-    rating: book.rating || 0,
-    genre: book.genre || 'Unknown',
+    rating: book.rating || 4.5,
+    genre: book.genre || 'Uncategorized',
     imageUrl: book.image_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e',
     summary: book.summary || "No summary available.",
-    authorDetails: book.author_book?.[0]?.author || null
-  }));
+    authorDetails: book.author_book?.[0]?.author || null,
+    reviews: book.books_read?.map(review => ({
+      rating: review.rating || 0,
+      user_id: review.user_id,
+      comment: review.comment || "No comment available"
+    })) || []
+  })) || [];
 };
 
-// Animation variants
 const container = {
   hidden: { opacity: 0 },
   show: {
@@ -169,102 +98,12 @@ const Books = () => {
 
   const { data: books, isLoading, error, refetch } = useQuery({
     queryKey: ['books'],
-    queryFn: async () => {
-      console.log("Fetching books...");
-      const { data: booksData, error: booksError } = await supabase
-        .from('book')
-        .select(`
-          *,
-          author_book (
-            author (
-              id,
-              name,
-              contact_details
-            )
-          ),
-          books_read (
-            rating,
-            user_id
-          )
-        `);
-
-      if (booksError) {
-        console.error("Error fetching books:", booksError);
-        throw booksError;
-      }
-
-      console.log("Books fetched:", booksData);
-      
-      if (!booksData || booksData.length === 0) {
-        return [
-          {
-            isbn: "978-0451524935",
-            title: "1984",
-            author: "George Orwell",
-            rating: 4.7,
-            genre: "Dystopian Fiction",
-            imageUrl: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e",
-            summary: "A dystopian novel set in a totalitarian society led by Big Brother."
-          },
-          {
-            isbn: "978-0061120084",
-            title: "To Kill a Mockingbird",
-            author: "Harper Lee",
-            rating: 4.8,
-            genre: "Classic",
-            imageUrl: "https://images.unsplash.com/photo-1544947950-fa07a98d237f",
-            summary: "Set in the American South during the 1930s, the story follows Scout Finch and her father, Atticus, who defends a Black man accused of a terrible crime."
-          },
-          {
-            isbn: "978-0307474278",
-            title: "The Da Vinci Code",
-            author: "Dan Brown",
-            rating: 4.5,
-            genre: "Thriller",
-            imageUrl: "https://images.unsplash.com/photo-1546521343-4eb2c01aa44b",
-            summary: "A thriller novel that follows symbologist Robert Langdon as he investigates a murder in the Louvre Museum and discovers a battle between the Priory of Sion and Opus Dei."
-          },
-          {
-            isbn: "978-0743273565",
-            title: "The Great Gatsby",
-            author: "F. Scott Fitzgerald",
-            rating: 4.3,
-            genre: "Classic",
-            imageUrl: "https://images.unsplash.com/photo-1541963463532-d68292c34b19",
-            summary: "Set in the Jazz Age, the novel explores themes of decadence, idealism, and the American Dream through the life of millionaire Jay Gatsby."
-          },
-          {
-            isbn: "978-0618640157",
-            title: "The Lord of the Rings",
-            author: "J.R.R. Tolkien",
-            rating: 4.9,
-            genre: "Fantasy",
-            imageUrl: "https://images.unsplash.com/photo-1491841550275-ad7854e35ca6",
-            summary: "An epic high-fantasy novel that follows hobbit Frodo Baggins as he embarks on a quest to destroy the One Ring and defeat the Dark Lord Sauron."
-          }
-        ];
-      }
-
-      return booksData.map(book => ({
-        isbn: book.isbn,
-        title: book.name,
-        author: book.author_book?.[0]?.author?.name || "Unknown Author",
-        rating: book.rating || 0,
-        genre: book.genre || "Unknown",
-        imageUrl: book.image_url || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e",
-        summary: book.summary || "No summary available.",
-        authorDetails: book.author_book?.[0]?.author || null,
-        reviews: book.books_read?.map(review => ({
-          rating: review.rating,
-          user_id: review.user_id,
-          comment: "No comment available" // Since comment doesn't exist, use a default value
-        })) || []
-      }));
-    }
+    queryFn: fetchBooks,
+    retry: 3,
+    retryDelay: 1000
   });
 
   useEffect(() => {
-    // Welcome notification to enhance UX
     setTimeout(() => {
       toast.success("Welcome to Book Catalog!", {
         description: "Explore our collection of amazing books.",
@@ -272,13 +111,11 @@ const Books = () => {
     }, 1000);
   }, []);
 
-  // Handle retry when there's an error
   const handleRetry = () => {
     toast.info("Retrying...");
     refetch();
   };
   
-  // Filter books based on search term and genre
   const filteredBooks = books?.filter(book => {
     const matchesSearch = searchTerm === "" || 
       book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -290,10 +127,8 @@ const Books = () => {
     return matchesSearch && matchesGenre;
   });
 
-  // Get unique genres for filter
   const genres = books ? [...new Set(books.map(book => book.genre))] : [];
 
-  // Loading and Error states with improved visuals
   if (isLoading) {
     return (
       <motion.div 
