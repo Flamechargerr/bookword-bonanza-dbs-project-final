@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { BookOpen, Mail, User } from 'lucide-react';
+import { BookOpen, Mail, User, RefreshCw, Database } from 'lucide-react';
 import MainNav from "@/components/MainNav";
 import AuthorDetailsDialog from "@/components/AuthorDetailsDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 const fetchAuthors = async () => {
   console.log("Fetching authors...");
   
-  // Fetch all authors directly, without filters
+  // Fetch all authors directly, without filters or limitations
   const { data, error } = await supabase
     .from('author')
     .select(`
@@ -34,6 +35,10 @@ const fetchAuthors = async () => {
   }
 
   console.log("Authors data from Supabase:", data);
+  
+  if (!data || data.length === 0) {
+    console.warn("No authors found in database. Check if data exists in Supabase.");
+  }
   
   // Transform the data into the format expected by the component
   return data?.map(author => ({
@@ -70,26 +75,35 @@ const item = {
 
 const Authors = () => {
   const [selectedAuthor, setSelectedAuthor] = useState<null | any>(null);
+  const [manualRefetchCount, setManualRefetchCount] = useState(0);
+  
   const { data: authors, isLoading, error, refetch } = useQuery({
-    queryKey: ['authors'],
+    queryKey: ['authors', manualRefetchCount],
     queryFn: fetchAuthors,
-    retry: 1,
+    retry: 3,
+    retryDelay: 1000,
     staleTime: 0,
     refetchOnMount: true,
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true
   });
 
   useEffect(() => {
-    if (authors && authors.length === 0) {
-      console.log("No authors found, retrying in 2 seconds...");
+    if (!authors || authors.length === 0) {
+      console.log("No authors found, retrying in 3 seconds...");
       const timer = setTimeout(() => {
         console.log("Retrying author fetch...");
-        refetch();
-      }, 2000);
+        setManualRefetchCount(prev => prev + 1);
+      }, 3000);
       
       return () => clearTimeout(timer);
     }
-  }, [authors, refetch]);
+  }, [authors]);
+
+  const handleRetry = () => {
+    toast.info("Retrying connection to fetch authors...");
+    setManualRefetchCount(prev => prev + 1);
+  };
 
   if (isLoading) return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
@@ -206,15 +220,16 @@ const Authors = () => {
           </motion.div>
         ) : (
           <div className="text-center py-12 bg-white/80 rounded-xl">
-            <BookOpen className="h-20 w-20 mx-auto text-purple-300 mb-4" />
+            <Database className="h-20 w-20 mx-auto text-purple-300 mb-4" />
             <h3 className="text-2xl font-medium text-gray-600 mb-2">No authors found</h3>
-            <p className="text-gray-500 mb-6">It seems there are no authors in the database</p>
-            <button 
-              onClick={() => refetch()} 
-              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+            <p className="text-gray-500 mb-6">There are currently no authors in the database or there might be an issue with the connection</p>
+            <Button 
+              onClick={handleRetry} 
+              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors flex items-center gap-2"
             >
-              Refresh Data
-            </button>
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              Retry Connection
+            </Button>
           </div>
         )}
 

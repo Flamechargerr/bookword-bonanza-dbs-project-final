@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Search, Filter, BookOpen, AlertCircle, RefreshCw, Sparkles } from 'lucide-react';
+import { Search, Filter, BookOpen, AlertCircle, RefreshCw, Sparkles, Database } from 'lucide-react';
 import MainNav from "@/components/MainNav";
 import BookCard from "@/components/BookCard";
 import { Input } from "@/components/ui/input";
@@ -34,8 +34,7 @@ const fetchBooks = async () => {
         comment,
         user_id
       )
-    `)
-    .limit(100);
+    `);
 
   if (error) {
     console.error("Error fetching books:", error);
@@ -44,6 +43,10 @@ const fetchBooks = async () => {
 
   console.log("Books data from Supabase:", data);
   console.log("Books count:", data?.length);
+  
+  if (!data || data.length === 0) {
+    console.warn("No books found in database. Check if data exists in Supabase.");
+  }
   
   return data?.map(book => ({
     isbn: book.isbn,
@@ -97,14 +100,17 @@ const pageVariants = {
 const Books = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterGenre, setFilterGenre] = useState("");
+  const [manualRefetchCount, setManualRefetchCount] = useState(0);
 
   const { data: books, isLoading, error, refetch } = useQuery({
-    queryKey: ['books'],
+    queryKey: ['books', manualRefetchCount],
     queryFn: fetchBooks,
-    retry: 1,
-    staleTime: 0,
+    retry: 3,
+    retryDelay: 1000,
+    staleTime: 0, 
     refetchOnMount: true,
-    refetchOnWindowFocus: true
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true
   });
 
   useEffect(() => {
@@ -113,11 +119,20 @@ const Books = () => {
         description: "Explore our collection of amazing books.",
       });
     }, 1000);
-  }, []);
+
+    if (!books || books.length === 0) {
+      const timer = setTimeout(() => {
+        console.log("No books found on initial load, retrying...");
+        setManualRefetchCount(prev => prev + 1);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [books]);
 
   const handleRetry = () => {
     toast.info("Retrying...");
-    refetch();
+    setManualRefetchCount(prev => prev + 1);
   };
   
   const filteredBooks = books?.filter(book => {
@@ -132,7 +147,7 @@ const Books = () => {
   });
 
   const genres = books ? [...new Set(books.map(book => book.genre))] : [];
-
+  
   if (isLoading) {
     return (
       <motion.div 
@@ -254,18 +269,20 @@ const Books = () => {
             animate={{ opacity: 1 }}
             className="text-center py-12 bg-white/80 backdrop-blur-sm rounded-2xl shadow-sm"
           >
-            <BookOpen className="h-20 w-20 mx-auto text-purple-300 mb-4" />
+            <Database className="h-20 w-20 mx-auto text-purple-300 mb-4" />
             <h3 className="text-2xl font-medium text-gray-600 mb-2">No books found</h3>
-            <p className="text-gray-500 mb-6">Try adjusting your search criteria</p>
-            <Button 
-              onClick={() => {
-                setSearchTerm("");
-                setFilterGenre("");
-              }}
-              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
-            >
-              Show All Books
-            </Button>
+            <p className="text-gray-500 mb-6">
+              There are currently no books in the database or there might be an issue with the connection
+            </p>
+            <div className="space-y-4">
+              <Button 
+                onClick={handleRetry}
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+              >
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                Retry Connection
+              </Button>
+            </div>
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
