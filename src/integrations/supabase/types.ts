@@ -110,18 +110,21 @@ export type Database = {
       books_read: {
         Row: {
           book_isbn: string
+          comment: string | null
           rating: number | null
           user_id: string
           wishlist: boolean | null
         }
         Insert: {
           book_isbn: string
+          comment?: string | null
           rating?: number | null
           user_id: string
           wishlist?: boolean | null
         }
         Update: {
           book_isbn?: string
+          comment?: string | null
           rating?: number | null
           user_id?: string
           wishlist?: boolean | null

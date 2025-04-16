@@ -4,9 +4,8 @@ import { motion } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, BookOpen, User, Heart, MessageSquare } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import AuthorDetailsDialog from './AuthorDetailsDialog';
 import { toast } from "sonner";
+import BookDetails from './BookDetails';
 
 interface Review {
   rating: number;
@@ -33,7 +32,6 @@ interface BookCardProps {
 const BookCard = ({ isbn, title, author, rating, genre, imageUrl, summary, authorDetails, reviews = [] }: BookCardProps) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  const [showAuthorDetails, setShowAuthorDetails] = useState(false);
   const [liked, setLiked] = useState(false);
 
   const handleLike = (e: React.MouseEvent) => {
@@ -42,225 +40,119 @@ const BookCard = ({ isbn, title, author, rating, genre, imageUrl, summary, autho
     toast.success(liked ? "Removed from favorites" : "Added to favorites!");
   };
 
-  // Format author details to match expected format in AuthorDetailsDialog
-  const formattedAuthorDetails = authorDetails ? {
-    id: authorDetails.id,
-    name: authorDetails.name,
-    contactDetails: authorDetails.contact_details,
-    books: [{ isbn, title }]
-  } : null;
-
   return (
-    <div className="h-[450px] relative">
-      <motion.div
-        className="w-full h-full perspective-1000"
-        initial={false}
-        animate={{ rotateY: isFlipped ? 180 : 0 }}
-        transition={{ duration: 0.6 }}
-        onClick={() => setIsFlipped(!isFlipped)}
-        style={{
-          transformStyle: "preserve-3d",
-          position: "relative"
-        }}
-      >
-        {/* Front of card */}
-        <Card 
-          className="absolute w-full h-full"
-          style={{
-            backfaceVisibility: "hidden",
-            transform: "rotateY(0deg)"
-          }}
+    <>
+      <div className="h-[450px] relative perspective-1000">
+        <motion.div
+          className="w-full h-full"
+          initial={false}
+          animate={{ rotateY: isFlipped ? 180 : 0 }}
+          transition={{ duration: 0.6 }}
+          onClick={() => setIsFlipped(!isFlipped)}
+          style={{ transformStyle: "preserve-3d" }}
         >
-          <div className="flex flex-col h-full">
-            <div className="relative h-[250px] overflow-hidden rounded-t-lg">
-              <img
-                src={imageUrl}
-                alt={title}
-                className="object-cover w-full h-full transition-transform duration-700 hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-              <motion.button
-                className="absolute top-3 right-3 p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-md"
-                whileTap={{ scale: 0.9 }}
-                onClick={handleLike}
-              >
-                <Heart className={`h-5 w-5 ${liked ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
-              </motion.button>
-            </div>
+          {/* Front of card */}
+          <Card 
+            className="absolute w-full h-full cursor-pointer transition-transform duration-300 hover:scale-[1.02]"
+            style={{ backfaceVisibility: "hidden" }}
+          >
+            <div className="flex flex-col h-full">
+              <div className="relative h-[250px] overflow-hidden rounded-t-lg">
+                <img
+                  src={imageUrl}
+                  alt={title}
+                  className="object-cover w-full h-full transition-transform duration-700 hover:scale-110"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <motion.button
+                  className="absolute top-3 right-3 p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-md hover:bg-white/90 transition-colors"
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleLike}
+                >
+                  <Heart className={`h-5 w-5 ${liked ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
+                </motion.button>
+              </div>
 
-            <CardHeader className="p-4">
-              <CardTitle className="text-lg font-semibold line-clamp-2">{title}</CardTitle>
-            </CardHeader>
+              <CardHeader className="p-4">
+                <CardTitle className="text-lg font-semibold line-clamp-2">{title}</CardTitle>
+              </CardHeader>
 
-            <CardContent className="p-4 pt-0 flex-1">
-              <p className="text-sm text-gray-600 mb-2">{author}</p>
-              <div className="flex items-center justify-between">
-                <Badge variant="secondary" className="bg-purple-100 text-purple-800 hover:bg-purple-200">
-                  {genre}
-                </Badge>
-                <div className="flex items-center">
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <Star 
-                      key={i}
-                      className={`h-4 w-4 ${i < Math.round(rating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
-                    />
-                  ))}
+              <CardContent className="p-4 pt-0 flex-1">
+                <p className="text-sm text-gray-600 mb-2">{author}</p>
+                <div className="flex items-center justify-between">
+                  <Badge variant="secondary" className="bg-purple-100 text-purple-800 hover:bg-purple-200">
+                    {genre}
+                  </Badge>
+                  <div className="flex items-center gap-1">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <span className="text-sm font-medium">{rating.toFixed(1)}</span>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-            
-            <div className="mt-auto p-4 pt-0">
-              <p className="text-xs text-center text-gray-500">Click to flip</p>
-            </div>
-          </div>
-        </Card>
-
-        {/* Back of card */}
-        <Card 
-          className="absolute w-full h-full bg-gradient-to-br from-purple-50 to-indigo-50"
-          style={{
-            backfaceVisibility: "hidden",
-            transform: "rotateY(180deg)"
-          }}
-        >
-          <div className="flex flex-col h-full">
-            <CardHeader className="p-4">
-              <CardTitle className="text-lg font-semibold mb-2">{title}</CardTitle>
-              <p className="text-sm text-gray-600">by {author}</p>
-            </CardHeader>
-
-            <CardContent className="p-4 flex-1 overflow-hidden flex flex-col">
-              <div className="text-sm text-gray-600 mb-4 overflow-y-auto flex-grow">
-                <p className="line-clamp-4">{summary || "No summary available."}</p>
-              </div>
+              </CardContent>
               
-              <div className="mt-auto space-y-2">
+              <div className="mt-auto p-4 pt-0">
+                <p className="text-xs text-center text-gray-500">Click to flip</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Back of card */}
+          <Card 
+            className="absolute w-full h-full cursor-pointer transition-transform duration-300 hover:scale-[1.02] bg-gradient-to-br from-purple-50 to-indigo-50"
+            style={{
+              backfaceVisibility: "hidden",
+              transform: "rotateY(180deg)"
+            }}
+          >
+            <div className="flex flex-col h-full p-6">
+              <h3 className="text-lg font-semibold mb-2">{title}</h3>
+              <p className="text-sm text-gray-600 mb-4">by {author}</p>
+              
+              <div className="flex-1 overflow-hidden">
+                <p className="text-sm text-gray-600 line-clamp-4">
+                  {summary || "No summary available."}
+                </p>
+              </div>
+
+              <div className="mt-4 space-y-2">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowDetails(true);
                   }}
-                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-purple-700 hover:to-indigo-700 transition-colors"
+                  className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-purple-700 hover:to-indigo-700 transition-colors flex items-center justify-center gap-2"
                 >
-                  View Full Details
+                  <BookOpen className="h-4 w-4" />
+                  View Details
                 </button>
                 
-                {formattedAuthorDetails && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowAuthorDetails(true);
-                    }}
-                    className="w-full bg-white text-purple-600 border border-purple-200 px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-50 transition-colors"
-                  >
-                    About the Author
-                  </button>
-                )}
-              </div>
-            </CardContent>
-            
-            <div className="mt-auto p-4 pt-0">
-              <p className="text-xs text-center text-gray-500">Click to flip back</p>
-            </div>
-          </div>
-        </Card>
-      </motion.div>
-
-      {/* Details Dialog */}
-      <Dialog open={showDetails} onOpenChange={setShowDetails}>
-        <DialogContent className="max-w-4xl bg-gradient-to-br from-purple-50 to-indigo-50">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
-              {title}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
-            <div className="aspect-[2/3] relative overflow-hidden rounded-lg shadow-lg">
-              <img
-                src={imageUrl}
-                alt={title}
-                className="object-cover w-full h-full"
-              />
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <User className="h-5 w-5 text-purple-600" />
-                  Author
-                </h3>
-                <p className="text-gray-600">{author}</p>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Summary</h3>
-                <p className="text-gray-600">{summary || "No summary available."}</p>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-2">Details</h3>
-                <dl className="grid grid-cols-2 gap-4">
-                  <div>
-                    <dt className="text-sm text-gray-500">Genre</dt>
-                    <dd className="text-gray-900">{genre}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-gray-500">ISBN</dt>
-                    <dd className="text-gray-900">{isbn}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm text-gray-500">Rating</dt>
-                    <dd className="text-gray-900 flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      {rating.toFixed(1)}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-purple-600" />
-                  Reviews
-                </h3>
-                <div className="space-y-4 max-h-[200px] overflow-y-auto pr-4">
-                  {reviews.length > 0 ? reviews.map((review, index) => (
-                    <div 
-                      key={index}
-                      className="bg-white/80 backdrop-blur-sm p-4 rounded-lg shadow-sm"
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="flex">
-                          {Array.from({ length: 5 }, (_, i) => (
-                            <Star 
-                              key={i}
-                              className={`h-4 w-4 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-600">{review.comment || "No comment provided."}</p>
-                    </div>
-                  )) : (
-                    <p className="text-gray-500 text-center py-4">No reviews yet</p>
-                  )}
+                <div className="flex items-center justify-between text-sm text-gray-600">
+                  <span className="flex items-center gap-1">
+                    <MessageSquare className="h-4 w-4" />
+                    {reviews.length} reviews
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <User className="h-4 w-4" />
+                    {authorDetails?.name}
+                  </span>
                 </div>
               </div>
+              
+              <div className="mt-4 pt-4 border-t border-purple-100">
+                <p className="text-xs text-center text-gray-500">Click to flip back</p>
+              </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </Card>
+        </motion.div>
+      </div>
 
-      {/* Author Details Dialog */}
-      {formattedAuthorDetails && (
-        <AuthorDetailsDialog
-          author={formattedAuthorDetails}
-          isOpen={showAuthorDetails}
-          onOpenChange={setShowAuthorDetails}
-        />
-      )}
-    </div>
+      <BookDetails
+        book={{ isbn, title, author, rating, genre, imageUrl, summary }}
+        reviews={reviews}
+        isOpen={showDetails}
+        onOpenChange={setShowDetails}
+      />
+    </>
   );
 };
 
