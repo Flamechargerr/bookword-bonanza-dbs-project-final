@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Star } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,16 +27,73 @@ export const BookReviewForm = ({ isbn, onSuccess }: BookReviewFormProps) => {
   });
   const [hoveredStar, setHoveredStar] = React.useState(0);
   const [selectedRating, setSelectedRating] = React.useState(0);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Check authentication status when component mounts
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+      setUserId(user?.id || null);
+    };
+    
+    checkAuth();
+    
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsLoggedIn(!!session);
+      setUserId(session?.user?.id || null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const onSubmit = async (data: ReviewFormData) => {
     try {
+      // Double-check authentication before submitting
+      if (!isLoggedIn || !userId) {
+        toast.error("Please sign in to leave a review");
+        return;
+      }
+
+      // First check if a book with this ISBN exists
+      const { data: bookExists, error: bookCheckError } = await supabase
+        .from('book')
+        .select('isbn')
+        .eq('isbn', isbn)
+        .single();
+
+      if (bookCheckError) {
+        console.error("Error checking book:", bookCheckError);
+        // For sample books, create the book record first
+        if (bookCheckError.code === 'PGRST116') {
+          const { error: insertBookError } = await supabase
+            .from('book')
+            .insert({
+              isbn: isbn,
+              name: "Sample Book", // Default name
+              // Add other required fields if any
+            });
+            
+          if (insertBookError) {
+            throw insertBookError;
+          }
+        } else {
+          throw bookCheckError;
+        }
+      }
+
+      // Now submit the review
       const { error } = await supabase
         .from('books_read')
         .upsert({
           book_isbn: isbn,
           rating: data.rating,
           comment: data.comment,
-          user_id: (await supabase.auth.getUser()).data.user?.id
+          user_id: userId
         });
 
       if (error) throw error;
@@ -45,8 +102,9 @@ export const BookReviewForm = ({ isbn, onSuccess }: BookReviewFormProps) => {
       form.reset();
       setSelectedRating(0);
       onSuccess?.();
-    } catch (error) {
-      toast.error("Please sign in to leave a review");
+    } catch (error: any) {
+      console.error("Review submission error:", error);
+      toast.error(error.message || "Failed to submit review. Please try again.");
     }
   };
 
@@ -104,6 +162,12 @@ export const BookReviewForm = ({ isbn, onSuccess }: BookReviewFormProps) => {
         >
           Submit Review
         </Button>
+        
+        {!isLoggedIn && (
+          <p className="text-sm text-red-500 text-center mt-2">
+            Please sign in to leave a review
+          </p>
+        )}
       </form>
     </Form>
   );
