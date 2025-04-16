@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface BookReviewFormProps {
   isbn: string;
+  title?: string;
+  author?: string;
   onSuccess?: () => void;
 }
 
@@ -18,7 +20,7 @@ interface ReviewFormData {
   comment: string;
 }
 
-export const BookReviewForm = ({ isbn, onSuccess }: BookReviewFormProps) => {
+export const BookReviewForm = ({ isbn, title, author, onSuccess }: BookReviewFormProps) => {
   const form = useForm<ReviewFormData>({
     defaultValues: {
       rating: 0,
@@ -29,6 +31,7 @@ export const BookReviewForm = ({ isbn, onSuccess }: BookReviewFormProps) => {
   const [selectedRating, setSelectedRating] = React.useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Check authentication status when component mounts
   useEffect(() => {
@@ -59,6 +62,8 @@ export const BookReviewForm = ({ isbn, onSuccess }: BookReviewFormProps) => {
         return;
       }
 
+      setIsSubmitting(true);
+
       // First check if a book with this ISBN exists
       const { data: bookExists, error: bookCheckError } = await supabase
         .from('book')
@@ -67,23 +72,28 @@ export const BookReviewForm = ({ isbn, onSuccess }: BookReviewFormProps) => {
         .single();
 
       if (bookCheckError) {
-        console.error("Error checking book:", bookCheckError);
-        // For sample books, create the book record first
-        if (bookCheckError.code === 'PGRST116') {
-          const { error: insertBookError } = await supabase
-            .from('book')
-            .insert({
-              isbn: isbn,
-              name: "Sample Book", // Default name
-              // Add other required fields if any
-            });
+        console.error("Book not found, attempting to create:", bookCheckError);
+        
+        // For sample books that don't exist in the database, create the book record first
+        const { error: insertBookError } = await supabase
+          .from('book')
+          .insert({
+            isbn: isbn,
+            name: title || "Sample Book",
+            // Add other provided fields if available
+            genre: "Uncategorized",
+            summary: "No summary available",
+            image_url: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e"
+          });
             
-          if (insertBookError) {
-            throw insertBookError;
-          }
-        } else {
-          throw bookCheckError;
+        if (insertBookError) {
+          console.error("Error creating book:", insertBookError);
+          toast.error("Unable to create book record. Please try again later.");
+          setIsSubmitting(false);
+          return;
         }
+        
+        toast.success("Book added to database");
       }
 
       // Now submit the review
@@ -96,15 +106,22 @@ export const BookReviewForm = ({ isbn, onSuccess }: BookReviewFormProps) => {
           user_id: userId
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Review submission error:", error);
+        toast.error("Failed to submit review. Please try again.");
+        setIsSubmitting(false);
+        return;
+      }
 
       toast.success("Review submitted successfully!");
       form.reset();
       setSelectedRating(0);
+      setIsSubmitting(false);
       onSuccess?.();
     } catch (error: any) {
       console.error("Review submission error:", error);
       toast.error(error.message || "Failed to submit review. Please try again.");
+      setIsSubmitting(false);
     }
   };
 
@@ -159,8 +176,9 @@ export const BookReviewForm = ({ isbn, onSuccess }: BookReviewFormProps) => {
         <Button
           type="submit"
           className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+          disabled={isSubmitting || !isLoggedIn}
         >
-          Submit Review
+          {isSubmitting ? "Submitting..." : "Submit Review"}
         </Button>
         
         {!isLoggedIn && (

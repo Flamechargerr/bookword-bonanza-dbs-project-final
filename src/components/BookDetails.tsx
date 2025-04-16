@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Star, User, BookOpen } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -92,7 +93,12 @@ const BookDetails = ({ book, reviews = [], isOpen, onOpenChange, onReviewSubmit 
 
             <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm">
               <h3 className="text-lg font-semibold mb-4">Write a Review</h3>
-              <BookReviewForm isbn={book.isbn} onSuccess={onReviewSubmit} />
+              <BookReviewForm 
+                isbn={book.isbn} 
+                title={book.title} 
+                author={book.author} 
+                onSuccess={onReviewSubmit} 
+              />
             </div>
 
             <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm">
