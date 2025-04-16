@@ -9,7 +9,154 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      author: {
+        Row: {
+          contact_details: string | null
+          id: number
+          name: string
+        }
+        Insert: {
+          contact_details?: string | null
+          id?: number
+          name: string
+        }
+        Update: {
+          contact_details?: string | null
+          id?: number
+          name?: string
+        }
+        Relationships: []
+      }
+      author_book: {
+        Row: {
+          author_id: number
+          book_isbn: string
+        }
+        Insert: {
+          author_id: number
+          book_isbn: string
+        }
+        Update: {
+          author_id?: number
+          book_isbn?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "author_book_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "author"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "author_book_book_isbn_fkey"
+            columns: ["book_isbn"]
+            isOneToOne: false
+            referencedRelation: "book"
+            referencedColumns: ["isbn"]
+          },
+        ]
+      }
+      book: {
+        Row: {
+          edition: string | null
+          format: string | null
+          genre: string | null
+          image_url: string | null
+          isbn: string
+          language: string | null
+          name: string
+          physical_attributes: string | null
+          publisher_id: number | null
+          rating: number | null
+          summary: string | null
+        }
+        Insert: {
+          edition?: string | null
+          format?: string | null
+          genre?: string | null
+          image_url?: string | null
+          isbn: string
+          language?: string | null
+          name: string
+          physical_attributes?: string | null
+          publisher_id?: number | null
+          rating?: number | null
+          summary?: string | null
+        }
+        Update: {
+          edition?: string | null
+          format?: string | null
+          genre?: string | null
+          image_url?: string | null
+          isbn?: string
+          language?: string | null
+          name?: string
+          physical_attributes?: string | null
+          publisher_id?: number | null
+          rating?: number | null
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_publisher_id_fkey"
+            columns: ["publisher_id"]
+            isOneToOne: false
+            referencedRelation: "publisher"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      books_read: {
+        Row: {
+          book_isbn: string
+          rating: number | null
+          user_id: string
+          wishlist: boolean | null
+        }
+        Insert: {
+          book_isbn: string
+          rating?: number | null
+          user_id: string
+          wishlist?: boolean | null
+        }
+        Update: {
+          book_isbn?: string
+          rating?: number | null
+          user_id?: string
+          wishlist?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "books_read_book_isbn_fkey"
+            columns: ["book_isbn"]
+            isOneToOne: false
+            referencedRelation: "book"
+            referencedColumns: ["isbn"]
+          },
+        ]
+      }
+      publisher: {
+        Row: {
+          id: number
+          location: string | null
+          name: string
+          pincode: string | null
+        }
+        Insert: {
+          id?: number
+          location?: string | null
+          name: string
+          pincode?: string | null
+        }
+        Update: {
+          id?: number
+          location?: string | null
+          name?: string
+          pincode?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,8 +1,27 @@
 
 import { Home, BookOpen, Users } from "lucide-react";
 import { Link } from "react-router-dom";
+import AuthButton from "./AuthButton";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const MainNav = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check initial auth state
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   return (
     <nav className="bg-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4">
@@ -34,6 +53,18 @@ const MainNav = () => {
                 Authors
               </Link>
             </div>
+          </div>
+          <div className="flex items-center">
+            {isAuthenticated ? (
+              <AuthButton />
+            ) : (
+              <Link
+                to="/auth"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       </div>
