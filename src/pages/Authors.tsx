@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -23,8 +24,11 @@ const fetchAuthors = async () => {
     `);
 
   if (error) {
+    console.error("Error fetching authors:", error);
     throw error;
   }
+
+  console.log("Authors data:", data);  // Add this to help debug
 
   return data.map(author => ({
     id: author.id,

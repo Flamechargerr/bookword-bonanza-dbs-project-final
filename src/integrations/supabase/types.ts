@@ -70,6 +70,7 @@ export type Database = {
           publisher_id: number | null
           rating: number | null
           summary: string | null
+          updated_at: string | null
         }
         Insert: {
           edition?: string | null
@@ -83,6 +84,7 @@ export type Database = {
           publisher_id?: number | null
           rating?: number | null
           summary?: string | null
+          updated_at?: string | null
         }
         Update: {
           edition?: string | null
@@ -96,6 +98,7 @@ export type Database = {
           publisher_id?: number | null
           rating?: number | null
           summary?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
