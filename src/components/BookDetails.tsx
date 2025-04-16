@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Star, User, BookOpen } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -31,14 +30,11 @@ interface BookDetailsProps {
 const BookDetails = ({ book, reviews = [], isOpen, onOpenChange, onReviewSubmit }: BookDetailsProps) => {
   const [localReviews, setLocalReviews] = useState<Review[]>(reviews);
 
-  // Update local reviews when the reviews prop changes
   useEffect(() => {
     setLocalReviews(reviews);
   }, [reviews]);
 
-  // Callback for when a review is successfully submitted
   const handleReviewSuccess = () => {
-    // Call the parent's onReviewSubmit callback
     if (onReviewSubmit) {
       onReviewSubmit();
     }
@@ -57,7 +53,7 @@ const BookDetails = ({ book, reviews = [], isOpen, onOpenChange, onReviewSubmit 
           <div className="space-y-6">
             <div className="aspect-[2/3] relative overflow-hidden rounded-lg shadow-lg group">
               <img
-                src={book.imageUrl}
+                src={book.imageUrl || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e'}
                 alt={book.title}
                 className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110"
               />

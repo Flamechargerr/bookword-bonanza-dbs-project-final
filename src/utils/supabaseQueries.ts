@@ -28,7 +28,6 @@ export const fetchBooks = async () => {
         genre,
         image_url,
         author_book (
-          author_id,
           author (
             id,
             name,
@@ -51,114 +50,46 @@ export const fetchBooks = async () => {
     
     if (!data || data.length === 0) {
       console.warn("No books found in database. Check if data exists in Supabase.");
-      // Display sample data for demonstration if no real data exists
       return getSampleBooks();
     }
     
     // Process the fetched data
     const processedBooks = data.map(book => {
-      // Determine author name from author_book relation if available
-      let authorName = "Unknown Author";
+      // Extract author name from author_book relation
+      const author = book.author_book?.[0]?.author?.name || "Unknown Author";
+      const authorDetails = book.author_book?.[0]?.author || null;
       
-      if (book.author_book && book.author_book.length > 0) {
-        // Find authors who have name data
-        const authorsWithNames = book.author_book
-          .filter(ab => ab.author && ab.author.name)
-          .map(ab => ab.author.name);
-        
-        if (authorsWithNames.length > 0) {
-          authorName = authorsWithNames.join(', ');
-        }
-      }
+      // Calculate average rating from reviews
+      const reviews = book.books_read || [];
+      const validRatings = reviews.filter(review => review.rating != null);
+      const avgRating = validRatings.length > 0
+        ? validRatings.reduce((sum, review) => sum + (review.rating || 0), 0) / validRatings.length
+        : book.rating || 0;
       
       return {
         isbn: book.isbn,
         title: book.name,
-        author: authorName,
-        rating: book.rating || 4.5,
+        author,
+        rating: Number(avgRating.toFixed(1)),
         genre: book.genre || 'Uncategorized',
         imageUrl: book.image_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e',
         summary: book.summary || "No summary available.",
-        authorDetails: book.author_book?.[0]?.author || null,
-        reviews: book.books_read?.map(review => ({
+        authorDetails,
+        reviews: reviews.map(review => ({
           rating: review.rating || 0,
           user_id: review.user_id,
-          comment: review.comment || "No comment available"
-        })) || []
+          comment: review.comment || "No comment provided."
+        }))
       };
     });
     
-    return processedBooks.length > 0 ? processedBooks : getSampleBooks();
+    return processedBooks;
     
   } catch (err) {
     console.error("Failed to fetch books:", err);
     toast.error("Failed to fetch books");
-    
-    // Fetch customers and generate random reviews for sample books
-    try {
-      const { data: customers } = await supabase.from('customer').select('id');
-      const sampleBooksWithCustomerReviews = getSampleBooksWithCustomerReviews(customers);
-      return sampleBooksWithCustomerReviews;
-    } catch (customerErr) {
-      console.error("Failed to fetch customers:", customerErr);
-      return getSampleBooks();
-    }
+    return getSampleBooks();
   }
-};
-
-// Function to get sample books with real customer reviews
-const getSampleBooksWithCustomerReviews = (customers) => {
-  if (!customers || customers.length === 0) {
-    return getSampleBooks(); // Fall back to default sample books if no customers
-  }
-  
-  // Create sample books with reviews from real customers
-  const sampleBooks = getSampleBooks();
-  
-  // Assign random reviews from actual customers to each book
-  return sampleBooks.map(book => {
-    // Generate 1-3 random reviews per book
-    const numReviews = Math.floor(Math.random() * 3) + 1;
-    const bookReviews = [];
-    
-    for (let i = 0; i < numReviews; i++) {
-      // Pick a random customer
-      const randomCustomer = customers[Math.floor(Math.random() * customers.length)];
-      
-      // Generate a random rating (3-5 stars)
-      const rating = Math.floor(Math.random() * 3) + 3;
-      
-      // Sample review comments
-      const comments = [
-        "Really enjoyed this book!",
-        "Great read, highly recommend.",
-        "Interesting perspective on the subject.",
-        "The author did a fantastic job explaining complex concepts.",
-        "Couldn't put it down once I started reading.",
-        "The content was engaging from start to finish.",
-        "A must-read for anyone interested in this topic.",
-        "Would definitely recommend to friends."
-      ];
-      
-      // Add a random comment
-      const comment = comments[Math.floor(Math.random() * comments.length)];
-      
-      bookReviews.push({
-        rating,
-        user_id: randomCustomer.id,
-        comment
-      });
-    }
-    
-    // Calculate average rating
-    const avgRating = bookReviews.reduce((sum, review) => sum + review.rating, 0) / bookReviews.length;
-    
-    return {
-      ...book,
-      rating: parseFloat(avgRating.toFixed(1)),
-      reviews: bookReviews
-    };
-  });
 };
 
 // Sample data to show when no data is returned from Supabase
