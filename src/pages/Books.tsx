@@ -34,7 +34,8 @@ const fetchBooks = async () => {
         comment,
         user_id
       )
-    `);
+    `)
+    .limit(100);
 
   if (error) {
     console.error("Error fetching books:", error);
@@ -42,6 +43,7 @@ const fetchBooks = async () => {
   }
 
   console.log("Books data from Supabase:", data);
+  console.log("Books count:", data?.length);
   
   return data?.map(book => ({
     isbn: book.isbn,
@@ -99,8 +101,10 @@ const Books = () => {
   const { data: books, isLoading, error, refetch } = useQuery({
     queryKey: ['books'],
     queryFn: fetchBooks,
-    retry: 3,
-    retryDelay: 1000
+    retry: 1,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 
   useEffect(() => {

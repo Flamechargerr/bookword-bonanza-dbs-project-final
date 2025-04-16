@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -11,7 +10,7 @@ import { toast } from "sonner";
 const fetchAuthors = async () => {
   console.log("Fetching authors...");
   
-  // Fetch authors with their books
+  // Fetch all authors directly, without filters
   const { data, error } = await supabase
     .from('author')
     .select(`
@@ -36,10 +35,6 @@ const fetchAuthors = async () => {
 
   console.log("Authors data from Supabase:", data);
   
-  if (!data || data.length === 0) {
-    console.warn("No authors found in the database");
-  }
-
   // Transform the data into the format expected by the component
   return data?.map(author => ({
     id: author.id,
@@ -78,11 +73,12 @@ const Authors = () => {
   const { data: authors, isLoading, error, refetch } = useQuery({
     queryKey: ['authors'],
     queryFn: fetchAuthors,
-    retry: 3,
-    retryDelay: 1000
+    retry: 1,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 
-  // Effect to retry fetching if no authors are found initially
   useEffect(() => {
     if (authors && authors.length === 0) {
       console.log("No authors found, retrying in 2 seconds...");
