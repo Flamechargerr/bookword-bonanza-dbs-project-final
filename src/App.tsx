@@ -7,7 +7,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
-import Books from "./pages/Books";  // Import the new Books page
+import Books from "./pages/Books";
+import Authors from "./pages/Authors";
 
 const queryClient = new QueryClient();
 
@@ -20,7 +21,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/books" element={<Books />} />  {/* Add the new Books route */}
+          <Route path="/books" element={<Books />} />
+          <Route path="/authors" element={<Authors />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

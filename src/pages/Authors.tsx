@@ -1,0 +1,200 @@
+
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
+import { BookOpen, Mail, User } from 'lucide-react';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import MainNav from "@/components/MainNav";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+const fetchAuthors = async () => {
+  const { data, error } = await supabase
+    .from('author')
+    .select(`
+      id,
+      name,
+      contact_details,
+      author_book (
+        book (
+          isbn,
+          name
+        )
+      )
+    `);
+
+  if (error) {
+    throw error;
+  }
+
+  return data.map(author => ({
+    id: author.id,
+    name: author.name,
+    contactDetails: author.contact_details,
+    books: author.author_book.map(ab => ({
+      isbn: ab.book.isbn,
+      title: ab.book.name
+    }))
+  }));
+};
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+      duration: 0.5
+    }
+  }
+};
+
+const Authors = () => {
+  const { data: authors, isLoading, error } = useQuery({
+    queryKey: ['authors'],
+    queryFn: fetchAuthors
+  });
+
+  const contactAuthor = (email: string) => {
+    navigator.clipboard.writeText(email);
+    toast.success(`Email copied: ${email}`);
+  };
+
+  if (isLoading) return (
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
+      <MainNav />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="flex justify-center"
+        >
+          <div className="loader h-10 w-10 border-4 border-purple-300 border-t-purple-600 rounded-full animate-spin"></div>
+        </motion.div>
+      </div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
+      <MainNav />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="text-red-500"
+        >
+          Error loading authors: {error.message}
+        </motion.p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-purple-100 to-white">
+      <MainNav />
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <motion.section 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-16"
+        >
+          <h1 className="text-4xl font-bold text-purple-900 mb-4 relative inline-block">
+            <span className="relative z-10">Meet Our Authors</span>
+            <span className="absolute bottom-0 left-0 w-full h-3 bg-purple-200 opacity-50 transform -rotate-1 z-0"></span>
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            The brilliant minds behind our collection of books.
+          </p>
+        </motion.section>
+
+        <motion.div 
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+        >
+          {authors.map((author) => (
+            <motion.div 
+              key={author.id}
+              variants={item}
+              whileHover={{ 
+                scale: 1.03,
+                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" 
+              }}
+              className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300"
+            >
+              <div className="bg-gradient-to-r from-purple-500 to-indigo-600 h-12"></div>
+              <div className="p-6">
+                <div className="flex items-center mb-4">
+                  <div className="bg-purple-100 rounded-full p-3 mr-4">
+                    <User className="h-6 w-6 text-purple-700" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-800">{author.name}</h2>
+                </div>
+                
+                <div className="flex items-center mt-4 text-gray-600 hover:text-purple-700 transition-colors cursor-pointer"
+                  onClick={() => contactAuthor(author.contactDetails)}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  <span className="text-sm">{author.contactDetails}</span>
+                </div>
+                
+                <div className="mt-6">
+                  <h3 className="font-medium text-gray-700 mb-2 flex items-center">
+                    <BookOpen className="h-4 w-4 mr-2 text-purple-700" />
+                    <span>Books ({author.books.length})</span>
+                  </h3>
+                  <ul className="space-y-1">
+                    {author.books.slice(0, 3).map((book) => (
+                      <HoverCard key={book.isbn}>
+                        <HoverCardTrigger asChild>
+                          <li className="text-sm text-gray-600 pl-6 py-1 border-l-2 border-purple-100 hover:border-purple-500 transition-colors cursor-pointer">
+                            {book.title}
+                          </li>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-80">
+                          <div className="flex justify-between space-x-4">
+                            <div>
+                              <h4 className="text-sm font-semibold">{book.title}</h4>
+                              <p className="text-sm text-gray-600">ISBN: {book.isbn}</p>
+                              <div className="flex items-center pt-2">
+                                <span className="text-xs text-purple-700 bg-purple-100 px-2 py-1 rounded-full">
+                                  View Details
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </HoverCardContent>
+                      </HoverCard>
+                    ))}
+                    {author.books.length > 3 && (
+                      <li className="text-xs text-purple-600 pl-6 font-medium">
+                        +{author.books.length - 3} more book(s)
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </main>
+    </div>
+  );
+};
+
+export default Authors;
