@@ -19,6 +19,9 @@ interface AuthorDetailsProps {
 }
 
 const AuthorDetailsDialog = ({ author, isOpen, onOpenChange }: AuthorDetailsProps) => {
+  // Check for existence of books array to prevent accessing length of undefined
+  const books = author?.books || [];
+  
   const handleContact = () => {
     navigator.clipboard.writeText(author.contactDetails);
     toast.success(`Email copied: ${author.contactDetails}`);
@@ -68,11 +71,11 @@ const AuthorDetailsDialog = ({ author, isOpen, onOpenChange }: AuthorDetailsProp
                 Published Books
               </span>
               <div className="bg-purple-100 px-2 py-0.5 rounded-full text-xs text-purple-700 ml-2">
-                {author.books.length}
+                {books.length}
               </div>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {author.books.map((book, index) => (
+              {books.map((book, index) => (
                 <motion.div
                   key={book.isbn}
                   initial={{ opacity: 0, y: 20 }}

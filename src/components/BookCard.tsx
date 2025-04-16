@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -43,6 +44,14 @@ const BookCard = ({ isbn, title, author, rating, genre, imageUrl, summary, autho
     // Add animation and notification
     toast.success(liked ? "Removed from favorites" : "Added to favorites!");
   };
+
+  // Format author details to match expected format in AuthorDetailsDialog
+  const formattedAuthorDetails = authorDetails ? {
+    id: authorDetails.id,
+    name: authorDetails.name,
+    contactDetails: authorDetails.contact_details,
+    books: [{ isbn, title }] // Provide a default book entry
+  } : null;
 
   return (
     <>
@@ -243,9 +252,9 @@ const BookCard = ({ isbn, title, author, rating, genre, imageUrl, summary, autho
       </Dialog>
 
       {/* Author Details Dialog */}
-      {authorDetails && (
+      {formattedAuthorDetails && (
         <AuthorDetailsDialog
-          author={authorDetails}
+          author={formattedAuthorDetails}
           isOpen={showAuthorDetails}
           onOpenChange={setShowAuthorDetails}
         />
