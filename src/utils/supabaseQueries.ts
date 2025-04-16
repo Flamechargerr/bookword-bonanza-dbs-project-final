@@ -55,9 +55,15 @@ export const fetchBooks = async () => {
     
     // Process the fetched data
     const processedBooks = data.map(book => {
-      // Extract author name from author_book relation
-      const author = book.author_book?.[0]?.author?.name || "Unknown Author";
-      const authorDetails = book.author_book?.[0]?.author || null;
+      // Extract author info from the author_book relation with better fallback
+      let authorName = "Unknown Author";
+      let authorDetails = null;
+      
+      // Check if author_book relation exists and has author data
+      if (book.author_book && book.author_book.length > 0 && book.author_book[0].author) {
+        authorName = book.author_book[0].author.name;
+        authorDetails = book.author_book[0].author;
+      }
       
       // Calculate average rating from reviews
       const reviews = book.books_read || [];
@@ -66,13 +72,29 @@ export const fetchBooks = async () => {
         ? validRatings.reduce((sum, review) => sum + (review.rating || 0), 0) / validRatings.length
         : book.rating || 0;
       
+      // Generate a themed image URL if none exists
+      const baseImageUrl = 'https://images.unsplash.com/';
+      const bookImageOptions = [
+        'photo-1543002588-bfa74002ed7e',
+        'photo-1532012197267-da84d127e765',
+        'photo-1512820790803-83ca734da794',
+        'photo-1497633762265-9d179a990aa6',
+        'photo-1528458909336-e7a0adfed0a5',
+        'photo-1589998059171-988d887df646',
+        'photo-1497633762265-9d179a990aa6',
+      ];
+      
+      // Use hash of book ISBN to consistently select the same image for the same book
+      const imageIndex = book.isbn.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % bookImageOptions.length;
+      const fallbackImage = `${baseImageUrl}${bookImageOptions[imageIndex]}?w=600`;
+      
       return {
         isbn: book.isbn,
         title: book.name,
-        author,
+        author: authorName,
         rating: Number(avgRating.toFixed(1)),
         genre: book.genre || 'Uncategorized',
-        imageUrl: book.image_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e',
+        imageUrl: book.image_url || fallbackImage,
         summary: book.summary || "No summary available.",
         authorDetails,
         reviews: reviews.map(review => ({
@@ -94,6 +116,20 @@ export const fetchBooks = async () => {
 
 // Sample data to show when no data is returned from Supabase
 const getSampleBooks = () => {
+  // Use a set of high-quality book cover images for sample data
+  const sampleImages = [
+    'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600',
+    'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600',
+    'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=600',
+    'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=600',
+    'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=600',
+    'https://images.unsplash.com/photo-1589998059171-988d887df646?w=600',
+    'https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=600',
+    'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=600',
+    'https://images.unsplash.com/photo-1528459105426-b9548367069b?w=600',
+    'https://images.unsplash.com/photo-1507842217343-583bb7270b66?w=600',
+  ];
+  
   return [
     {
       isbn: "9781449358655",
@@ -101,7 +137,7 @@ const getSampleBooks = () => {
       author: "Foster Provost, Tom Fawcett",
       rating: 4.5,
       genre: "Data Science",
-      imageUrl: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=600",
+      imageUrl: sampleImages[0],
       summary: "Written by renowned data science experts Foster Provost and Tom Fawcett, Data Science for Business introduces the fundamental principles of data science, and walks you through the 'data-analytic thinking' necessary for extracting useful knowledge and business value from the data you collect.",
       reviews: [
         { rating: 5, user_id: "demo-1", comment: "Excellent introduction to data science for those in business." }
@@ -113,7 +149,7 @@ const getSampleBooks = () => {
       author: "Wes McKinney",
       rating: 4.7,
       genre: "Data Science",
-      imageUrl: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=600",
+      imageUrl: sampleImages[1],
       summary: "Get complete instructions for manipulating, processing, cleaning, and crunching datasets in Python. Updated for Python 3.6, the second edition of this hands-on guide is packed with practical case studies that show you how to solve a broad set of data analysis problems effectively.",
       reviews: [
         { rating: 5, user_id: "demo-2", comment: "The best resource for learning pandas and NumPy." }
@@ -125,7 +161,7 @@ const getSampleBooks = () => {
       author: "Peter Bruce, Andrew Bruce",
       rating: 4.6,
       genre: "Data Science",
-      imageUrl: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600",
+      imageUrl: sampleImages[2],
       summary: "Statistical methods are a key part of data science, yet few data scientists have formal statistical training. Courses and books on basic statistics rarely cover the topic from a data science perspective. This practical guide explains how to apply various statistical methods to data science.",
       reviews: [
         { rating: 4, user_id: "demo-3", comment: "Great resource for understanding statistics in a data science context." }
@@ -137,7 +173,7 @@ const getSampleBooks = () => {
       author: "Jure Leskovec, Anand Rajaraman, Jeffrey D. Ullman",
       rating: 4.8,
       genre: "Data Science",
-      imageUrl: "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=600",
+      imageUrl: sampleImages[3],
       summary: "The book focuses on practical algorithms that have been used to solve key problems in data mining and can be applied successfully to very large datasets. It begins with a discussion of the map-reduce framework, an important tool for parallelizing algorithms automatically.",
       reviews: [
         { rating: 5, user_id: "demo-4", comment: "Excellent for understanding algorithms for big data." }
@@ -149,7 +185,7 @@ const getSampleBooks = () => {
       author: "Aurélien Géron",
       rating: 4.9,
       genre: "Machine Learning",
-      imageUrl: "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?w=600",
+      imageUrl: sampleImages[4],
       summary: "Through a series of recent breakthroughs, deep learning has boosted the entire field of machine learning. Now, even programmers who know close to nothing about this technology can use simple, efficient tools to implement programs capable of learning from data.",
       reviews: [
         { rating: 5, user_id: "demo-5", comment: "The best practical introduction to machine learning I've found." }
@@ -161,7 +197,7 @@ const getSampleBooks = () => {
       author: "Mohammed Guller",
       rating: 4.4,
       genre: "Big Data",
-      imageUrl: "https://images.unsplash.com/photo-1534474692954-a0dd39d6d32c?w=600",
+      imageUrl: sampleImages[5],
       summary: "This book introduces Apache Spark, the open source cluster computing system that makes data analytics fast to write and fast to run. With Spark, you can tackle big datasets quickly through simple APIs in Python, Java, and Scala.",
       reviews: [
         { rating: 4, user_id: "demo-6", comment: "Good introduction to Spark for big data processing." }
@@ -173,7 +209,7 @@ const getSampleBooks = () => {
       author: "François Chollet",
       rating: 4.8,
       genre: "Machine Learning",
-      imageUrl: "https://images.unsplash.com/photo-1550645612-83f5d594b671?w=600",
+      imageUrl: sampleImages[6],
       summary: "Deep Learning with Python introduces the field of deep learning using Python and the powerful Keras library. Written by Keras creator and Google AI researcher François Chollet, this book builds your understanding through intuitive explanations and practical examples.",
       reviews: [
         { rating: 5, user_id: "demo-7", comment: "The best book on deep learning with practical examples using Keras." }
@@ -185,7 +221,7 @@ const getSampleBooks = () => {
       author: "Hobson Lane, Cole Howard, Hannes Hapke",
       rating: 4.5,
       genre: "NLP",
-      imageUrl: "https://images.unsplash.com/photo-1519682577862-22b62b24e493?w=600",
+      imageUrl: sampleImages[7],
       summary: "Natural Language Processing in Action is your guide to creating machines that understand human language using the power of Python with its ecosystem of packages dedicated to NLP and AI.",
       reviews: [
         { rating: 4, user_id: "demo-8", comment: "Practical approach to NLP with good examples." }
@@ -197,7 +233,7 @@ const getSampleBooks = () => {
       author: "Claus O. Wilke",
       rating: 4.7,
       genre: "Data Visualization",
-      imageUrl: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600",
+      imageUrl: sampleImages[8],
       summary: "Effective visualization is the best way to communicate information from the increasingly large and complex datasets in the natural and social sciences. But with the increasing power of visualization software today, scientists, engineers, and business analysts often have to navigate a bewildering array of visualization choices.",
       reviews: [
         { rating: 5, user_id: "demo-9", comment: "Essential reading for anyone working with data visualization." }
@@ -209,7 +245,7 @@ const getSampleBooks = () => {
       author: "Joel Grus",
       rating: 4.6,
       genre: "Data Science",
-      imageUrl: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=600",
+      imageUrl: sampleImages[9],
       summary: "Data science libraries, frameworks, modules, and toolkits are great for doing data science, but they're also a good way to dive into the discipline without actually understanding data science. With this updated second edition, you'll learn how many of the most fundamental data science tools and algorithms work.",
       reviews: [
         { rating: 4, user_id: "demo-10", comment: "Great for understanding the fundamentals without relying on libraries." }

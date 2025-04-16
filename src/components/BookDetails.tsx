@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Star, User, BookOpen } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -40,6 +41,11 @@ const BookDetails = ({ book, reviews = [], isOpen, onOpenChange, onReviewSubmit 
     }
   };
 
+  // Handle image loading errors
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    e.currentTarget.src = 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=600';
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl bg-gradient-to-br from-purple-50 to-indigo-50">
@@ -53,9 +59,10 @@ const BookDetails = ({ book, reviews = [], isOpen, onOpenChange, onReviewSubmit 
           <div className="space-y-6">
             <div className="aspect-[2/3] relative overflow-hidden rounded-lg shadow-lg group">
               <img
-                src={book.imageUrl || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e'}
+                src={book.imageUrl || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=600'}
                 alt={book.title}
                 className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110"
+                onError={handleImageError}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </div>

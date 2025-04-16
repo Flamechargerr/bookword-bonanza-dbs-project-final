@@ -36,6 +36,9 @@ const BookCard = ({ isbn, title, author, rating, genre, imageUrl, summary, autho
   const [liked, setLiked] = useState(false);
   const [bookReviews, setBookReviews] = useState<Review[]>(reviews);
 
+  // Ensure we have a valid author name
+  const displayAuthor = author && author !== "Unknown Author" ? author : (authorDetails?.name || "Unknown Author");
+
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
     setLiked(!liked);
@@ -64,6 +67,11 @@ const BookCard = ({ isbn, title, author, rating, genre, imageUrl, summary, autho
     }
   };
 
+  // Handle image loading errors
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    e.currentTarget.src = 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=600';
+  };
+
   return (
     <>
       <div className="h-[450px] relative perspective-1000">
@@ -86,6 +94,7 @@ const BookCard = ({ isbn, title, author, rating, genre, imageUrl, summary, autho
                   src={imageUrl}
                   alt={title}
                   className="object-cover w-full h-full transition-transform duration-700 hover:scale-110"
+                  onError={handleImageError}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <motion.button
@@ -102,7 +111,7 @@ const BookCard = ({ isbn, title, author, rating, genre, imageUrl, summary, autho
               </CardHeader>
 
               <CardContent className="p-4 pt-0 flex-1">
-                <p className="text-sm text-gray-600 mb-2">{author}</p>
+                <p className="text-sm text-gray-600 mb-2">{displayAuthor}</p>
                 <div className="flex items-center justify-between">
                   <Badge variant="secondary" className="bg-purple-100 text-purple-800 hover:bg-purple-200">
                     {genre}
@@ -130,7 +139,7 @@ const BookCard = ({ isbn, title, author, rating, genre, imageUrl, summary, autho
           >
             <div className="flex flex-col h-full p-6">
               <h3 className="text-lg font-semibold mb-2">{title}</h3>
-              <p className="text-sm text-gray-600 mb-4">by {author}</p>
+              <p className="text-sm text-gray-600 mb-4">by {displayAuthor}</p>
               
               <div className="flex-1 overflow-hidden">
                 <p className="text-sm text-gray-600 line-clamp-4">
@@ -157,7 +166,7 @@ const BookCard = ({ isbn, title, author, rating, genre, imageUrl, summary, autho
                   </span>
                   <span className="flex items-center gap-1">
                     <User className="h-4 w-4" />
-                    {authorDetails?.name || author}
+                    {displayAuthor}
                   </span>
                 </div>
               </div>
@@ -171,7 +180,7 @@ const BookCard = ({ isbn, title, author, rating, genre, imageUrl, summary, autho
       </div>
 
       <BookDetails
-        book={{ isbn, title, author, rating, genre, imageUrl, summary }}
+        book={{ isbn, title, author: displayAuthor, rating, genre, imageUrl, summary }}
         reviews={bookReviews}
         isOpen={showDetails}
         onOpenChange={setShowDetails}
