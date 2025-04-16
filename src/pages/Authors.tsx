@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { BookOpen, Mail, User } from 'lucide-react';
@@ -8,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const fetchAuthors = async () => {
+  console.log("Fetching authors...");
   const { data, error } = await supabase
     .from('author')
     .select(`
@@ -28,15 +30,19 @@ const fetchAuthors = async () => {
   }
 
   console.log("Authors data:", data);  // Detailed logging for debugging
+  
+  if (!data || data.length === 0) {
+    console.warn("No authors found in the database");
+  }
 
   return data.map(author => ({
     id: author.id,
     name: author.name,
     contactDetails: author.contact_details,
-    books: author.author_book.map(ab => ({
+    books: author.author_book?.map(ab => ({
       isbn: ab.book.isbn,
       title: ab.book.name
-    }))
+    })) || []
   }));
 };
 
@@ -63,11 +69,25 @@ const item = {
 
 const Authors = () => {
   const [selectedAuthor, setSelectedAuthor] = useState<null | any>(null);
-  const { data: authors, isLoading, error } = useQuery({
+  const { data: authors, isLoading, error, refetch } = useQuery({
     queryKey: ['authors'],
     queryFn: fetchAuthors,
-    retry: 2
+    retry: 3,
+    retryDelay: 1000
   });
+
+  // Effect to retry fetching if no authors are found initially
+  useEffect(() => {
+    if (authors && authors.length === 0) {
+      console.log("No authors found, retrying in 2 seconds...");
+      const timer = setTimeout(() => {
+        console.log("Retrying author fetch...");
+        refetch();
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [authors, refetch]);
 
   if (isLoading) return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
@@ -97,6 +117,12 @@ const Authors = () => {
         >
           Error loading authors: {error.message}
         </motion.p>
+        <button 
+          onClick={() => refetch()} 
+          className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+        >
+          Try Again
+        </button>
       </div>
     </div>
   );
@@ -144,7 +170,8 @@ const Authors = () => {
                   </div>
                   
                   <div className="flex items-center mt-4 text-gray-600 hover:text-purple-700 transition-colors cursor-pointer"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       navigator.clipboard.writeText(author.contactDetails);
                       toast.success(`Email copied: ${author.contactDetails}`);
                     }}
@@ -156,15 +183,15 @@ const Authors = () => {
                   <div className="mt-6">
                     <h3 className="font-medium text-gray-700 mb-2 flex items-center">
                       <BookOpen className="h-4 w-4 mr-2 text-purple-700" />
-                      <span>Books ({author.books.length})</span>
+                      <span>Books ({author.books?.length || 0})</span>
                     </h3>
                     <ul className="space-y-1">
-                      {author.books.slice(0, 3).map((book) => (
+                      {author.books && author.books.slice(0, 3).map((book) => (
                         <li key={book.isbn} className="text-sm text-gray-600 pl-6 py-1 border-l-2 border-purple-100 hover:border-purple-500 transition-colors cursor-pointer">
                           {book.title}
                         </li>
                       ))}
-                      {author.books.length > 3 && (
+                      {author.books && author.books.length > 3 && (
                         <li className="text-xs text-purple-600 pl-6 font-medium">
                           +{author.books.length - 3} more book(s)
                         </li>
@@ -179,7 +206,13 @@ const Authors = () => {
           <div className="text-center py-12 bg-white/80 rounded-xl">
             <BookOpen className="h-20 w-20 mx-auto text-purple-300 mb-4" />
             <h3 className="text-2xl font-medium text-gray-600 mb-2">No authors found</h3>
-            <p className="text-gray-500">It seems there are no authors in the database</p>
+            <p className="text-gray-500 mb-6">It seems there are no authors in the database</p>
+            <button 
+              onClick={() => refetch()} 
+              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+            >
+              Refresh Data
+            </button>
           </div>
         )}
 
