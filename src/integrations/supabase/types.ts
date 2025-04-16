@@ -139,6 +139,24 @@ export type Database = {
           },
         ]
       }
+      customer: {
+        Row: {
+          id: string
+          password: string
+          username: string
+        }
+        Insert: {
+          id?: string
+          password: string
+          username: string
+        }
+        Update: {
+          id?: string
+          password?: string
+          username?: string
+        }
+        Relationships: []
+      }
       publisher: {
         Row: {
           id: number
