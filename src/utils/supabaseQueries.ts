@@ -55,21 +55,41 @@ export const fetchBooks = async () => {
       return getSampleBooks();
     }
     
-    return data?.map(book => ({
-      isbn: book.isbn,
-      title: book.name,
-      author: book.author_book?.map(ab => ab.author?.name).filter(Boolean).join(', ') || "Unknown Author",
-      rating: book.rating || 4.5,
-      genre: book.genre || 'Uncategorized',
-      imageUrl: book.image_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e',
-      summary: book.summary || "No summary available.",
-      authorDetails: book.author_book?.[0]?.author || null,
-      reviews: book.books_read?.map(review => ({
-        rating: review.rating || 0,
-        user_id: review.user_id,
-        comment: review.comment || "No comment available"
-      })) || []
-    })) || getSampleBooks();
+    // Process the fetched data
+    const processedBooks = data.map(book => {
+      // Determine author name from author_book relation if available
+      let authorName = "Unknown Author";
+      
+      if (book.author_book && book.author_book.length > 0) {
+        // Find authors who have name data
+        const authorsWithNames = book.author_book
+          .filter(ab => ab.author && ab.author.name)
+          .map(ab => ab.author.name);
+        
+        if (authorsWithNames.length > 0) {
+          authorName = authorsWithNames.join(', ');
+        }
+      }
+      
+      return {
+        isbn: book.isbn,
+        title: book.name,
+        author: authorName,
+        rating: book.rating || 4.5,
+        genre: book.genre || 'Uncategorized',
+        imageUrl: book.image_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e',
+        summary: book.summary || "No summary available.",
+        authorDetails: book.author_book?.[0]?.author || null,
+        reviews: book.books_read?.map(review => ({
+          rating: review.rating || 0,
+          user_id: review.user_id,
+          comment: review.comment || "No comment available"
+        })) || []
+      };
+    });
+    
+    return processedBooks.length > 0 ? processedBooks : getSampleBooks();
+    
   } catch (err) {
     console.error("Failed to fetch books:", err);
     toast.error("Failed to fetch books");
@@ -150,7 +170,7 @@ const getSampleBooks = () => {
       author: "Foster Provost, Tom Fawcett",
       rating: 4.5,
       genre: "Data Science",
-      imageUrl: "https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=600",
+      imageUrl: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=600",
       summary: "Written by renowned data science experts Foster Provost and Tom Fawcett, Data Science for Business introduces the fundamental principles of data science, and walks you through the 'data-analytic thinking' necessary for extracting useful knowledge and business value from the data you collect.",
       reviews: [
         { rating: 5, user_id: "demo-1", comment: "Excellent introduction to data science for those in business." }

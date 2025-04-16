@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Star, BookOpen, User, Heart, MessageSquare } from 'lucide-react';
 import { toast } from "sonner";
 import BookDetails from './BookDetails';
+import { supabase } from "@/integrations/supabase/client";
 
 interface Review {
   rating: number;
@@ -33,11 +34,34 @@ const BookCard = ({ isbn, title, author, rating, genre, imageUrl, summary, autho
   const [isFlipped, setIsFlipped] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [bookReviews, setBookReviews] = useState<Review[]>(reviews);
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
     setLiked(!liked);
     toast.success(liked ? "Removed from favorites" : "Added to favorites!");
+  };
+
+  // This function will be called when a review is submitted
+  const handleReviewSubmit = async () => {
+    try {
+      // Fetch the latest reviews for this book
+      const { data, error } = await supabase
+        .from('books_read')
+        .select('*')
+        .eq('book_isbn', isbn);
+      
+      if (error) {
+        console.error("Error fetching reviews:", error);
+        return;
+      }
+
+      // Update local state with the new reviews
+      setBookReviews(data || []);
+      toast.success("Review submitted and visible now!");
+    } catch (error) {
+      console.error("Error in handleReviewSubmit:", error);
+    }
   };
 
   return (
@@ -129,11 +153,11 @@ const BookCard = ({ isbn, title, author, rating, genre, imageUrl, summary, autho
                 <div className="flex items-center justify-between text-sm text-gray-600">
                   <span className="flex items-center gap-1">
                     <MessageSquare className="h-4 w-4" />
-                    {reviews.length} reviews
+                    {bookReviews.length} reviews
                   </span>
                   <span className="flex items-center gap-1">
                     <User className="h-4 w-4" />
-                    {authorDetails?.name}
+                    {authorDetails?.name || author}
                   </span>
                 </div>
               </div>
@@ -148,9 +172,10 @@ const BookCard = ({ isbn, title, author, rating, genre, imageUrl, summary, autho
 
       <BookDetails
         book={{ isbn, title, author, rating, genre, imageUrl, summary }}
-        reviews={reviews}
+        reviews={bookReviews}
         isOpen={showDetails}
         onOpenChange={setShowDetails}
+        onReviewSubmit={handleReviewSubmit}
       />
     </>
   );

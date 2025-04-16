@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Star, User, BookOpen } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BookReviewForm } from './BookReviewForm';
@@ -29,6 +29,21 @@ interface BookDetailsProps {
 }
 
 const BookDetails = ({ book, reviews = [], isOpen, onOpenChange, onReviewSubmit }: BookDetailsProps) => {
+  const [localReviews, setLocalReviews] = useState<Review[]>(reviews);
+
+  // Update local reviews when the reviews prop changes
+  useEffect(() => {
+    setLocalReviews(reviews);
+  }, [reviews]);
+
+  // Callback for when a review is successfully submitted
+  const handleReviewSuccess = () => {
+    // Call the parent's onReviewSubmit callback
+    if (onReviewSubmit) {
+      onReviewSubmit();
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl bg-gradient-to-br from-purple-50 to-indigo-50">
@@ -97,7 +112,7 @@ const BookDetails = ({ book, reviews = [], isOpen, onOpenChange, onReviewSubmit 
                 isbn={book.isbn} 
                 title={book.title} 
                 author={book.author} 
-                onSuccess={onReviewSubmit} 
+                onSuccess={handleReviewSuccess} 
               />
             </div>
 
@@ -105,8 +120,8 @@ const BookDetails = ({ book, reviews = [], isOpen, onOpenChange, onReviewSubmit 
               <h3 className="text-lg font-semibold mb-4">Reviews</h3>
               <ScrollArea className="h-[200px] rounded-md">
                 <div className="space-y-4">
-                  {reviews.length > 0 ? (
-                    reviews.map((review, index) => (
+                  {localReviews.length > 0 ? (
+                    localReviews.map((review, index) => (
                       <div
                         key={index}
                         className="p-4 rounded-lg bg-white shadow-sm border border-purple-100"
