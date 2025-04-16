@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,7 +11,6 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 const fetchBooks = async () => {
-  // Log the fetch attempt to help debug
   console.log("Fetching books from Supabase...");
   
   const { data, error } = await supabase
@@ -38,9 +38,8 @@ const fetchBooks = async () => {
 
   console.log("Books fetched:", data);
   
-  // If no books found, add some sample data for demo purposes
+  // If no books found, add more sample books
   if (!data || data.length === 0) {
-    console.log("No books found, using sample data");
     return [
       {
         isbn: "978-0451524935",
@@ -86,6 +85,34 @@ const fetchBooks = async () => {
         genre: "Fantasy",
         imageUrl: "https://images.unsplash.com/photo-1491841550275-ad7854e35ca6",
         summary: "An epic high-fantasy novel that follows hobbit Frodo Baggins as he embarks on a quest to destroy the One Ring and defeat the Dark Lord Sauron."
+      },
+      // Add 3 more books to ensure more than 5
+      {
+        isbn: "978-0062315007",
+        title: "The Alchemist",
+        author: "Paulo Coelho",
+        rating: 4.6,
+        genre: "Fiction",
+        imageUrl: "https://images.unsplash.com/photo-1519681393784-d120267933ba",
+        summary: "A mystical story of Santiago, an Andalusian shepherd boy who yearns to travel in search of a worldly treasure."
+      },
+      {
+        isbn: "978-0385421670",
+        title: "Fight Club",
+        author: "Chuck Palahniuk",
+        rating: 4.4,
+        genre: "Contemporary Fiction",
+        imageUrl: "https://images.unsplash.com/photo-1600783245891-47dd9c5e1225",
+        summary: "A dark, satirical novel about masculinity, consumerism, and identity in modern society."
+      },
+      {
+        isbn: "978-0156030658",
+        title: "One Hundred Years of Solitude",
+        author: "Gabriel García Márquez",
+        rating: 4.7,
+        genre: "Magical Realism",
+        imageUrl: "https://images.unsplash.com/photo-1541963463532-d68292c34b19",
+        summary: "A landmark novel of magical realism that chronicles the multi-generational story of the Buendía family."
       }
     ];
   }
@@ -98,7 +125,8 @@ const fetchBooks = async () => {
     rating: book.rating || 0,
     genre: book.genre || 'Unknown',
     imageUrl: book.image_url || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e',
-    summary: book.summary || "No summary available."
+    summary: book.summary || "No summary available.",
+    authorDetails: book.author_book?.[0]?.author || null
   }));
 };
 
