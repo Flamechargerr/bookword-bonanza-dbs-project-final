@@ -1,10 +1,9 @@
-
-import React from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { BookOpen, Mail, User } from 'lucide-react';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import MainNav from "@/components/MainNav";
+import AuthorDetailsDialog from "@/components/AuthorDetailsDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -60,15 +59,11 @@ const item = {
 };
 
 const Authors = () => {
+  const [selectedAuthor, setSelectedAuthor] = useState<null | any>(null);
   const { data: authors, isLoading, error } = useQuery({
     queryKey: ['authors'],
     queryFn: fetchAuthors
   });
-
-  const contactAuthor = (email: string) => {
-    navigator.clipboard.writeText(email);
-    toast.success(`Email copied: ${email}`);
-  };
 
   if (isLoading) return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
@@ -127,15 +122,12 @@ const Authors = () => {
           animate="show"
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
-          {authors.map((author) => (
+          {authors?.map((author) => (
             <motion.div 
               key={author.id}
               variants={item}
-              whileHover={{ 
-                scale: 1.03,
-                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" 
-              }}
-              className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300"
+              className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer"
+              onClick={() => setSelectedAuthor(author)}
             >
               <div className="bg-gradient-to-r from-purple-500 to-indigo-600 h-12"></div>
               <div className="p-6">
@@ -147,7 +139,10 @@ const Authors = () => {
                 </div>
                 
                 <div className="flex items-center mt-4 text-gray-600 hover:text-purple-700 transition-colors cursor-pointer"
-                  onClick={() => contactAuthor(author.contactDetails)}
+                  onClick={() => {
+                    navigator.clipboard.writeText(author.contactDetails);
+                    toast.success(`Email copied: ${author.contactDetails}`);
+                  }}
                 >
                   <Mail className="h-4 w-4 mr-2" />
                   <span className="text-sm">{author.contactDetails}</span>
@@ -160,26 +155,9 @@ const Authors = () => {
                   </h3>
                   <ul className="space-y-1">
                     {author.books.slice(0, 3).map((book) => (
-                      <HoverCard key={book.isbn}>
-                        <HoverCardTrigger asChild>
-                          <li className="text-sm text-gray-600 pl-6 py-1 border-l-2 border-purple-100 hover:border-purple-500 transition-colors cursor-pointer">
-                            {book.title}
-                          </li>
-                        </HoverCardTrigger>
-                        <HoverCardContent className="w-80">
-                          <div className="flex justify-between space-x-4">
-                            <div>
-                              <h4 className="text-sm font-semibold">{book.title}</h4>
-                              <p className="text-sm text-gray-600">ISBN: {book.isbn}</p>
-                              <div className="flex items-center pt-2">
-                                <span className="text-xs text-purple-700 bg-purple-100 px-2 py-1 rounded-full">
-                                  View Details
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </HoverCardContent>
-                      </HoverCard>
+                      <li key={book.isbn} className="text-sm text-gray-600 pl-6 py-1 border-l-2 border-purple-100 hover:border-purple-500 transition-colors cursor-pointer">
+                        {book.title}
+                      </li>
                     ))}
                     {author.books.length > 3 && (
                       <li className="text-xs text-purple-600 pl-6 font-medium">
@@ -192,7 +170,15 @@ const Authors = () => {
             </motion.div>
           ))}
         </motion.div>
-      </main>
+
+      {selectedAuthor && (
+        <AuthorDetailsDialog
+          author={selectedAuthor}
+          isOpen={!!selectedAuthor}
+          onOpenChange={(open) => !open && setSelectedAuthor(null)}
+        />
+      )}
+    </main>
     </div>
   );
 };
