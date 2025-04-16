@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -74,71 +73,72 @@ export const fetchBooks = async () => {
   } catch (err) {
     console.error("Failed to fetch books:", err);
     toast.error("Failed to fetch books");
-    return getSampleBooks();
+    
+    // Fetch customers and generate random reviews for sample books
+    try {
+      const { data: customers } = await supabase.from('customer').select('id');
+      const sampleBooksWithCustomerReviews = getSampleBooksWithCustomerReviews(customers);
+      return sampleBooksWithCustomerReviews;
+    } catch (customerErr) {
+      console.error("Failed to fetch customers:", customerErr);
+      return getSampleBooks();
+    }
   }
 };
 
-export const fetchAuthors = async () => {
-  console.log("Fetching authors...");
-  
-  try {
-    // First, check if the author table exists and has data
-    const { count, error: countError } = await supabase
-      .from('author')
-      .select('*', { count: 'exact', head: true });
-    
-    if (countError) {
-      console.error("Error checking author table:", countError);
-      throw countError;
-    }
-    
-    console.log(`Author table check: Found ${count} records`);
-    
-    // Fetch all authors directly, without filters or limitations
-    const { data, error } = await supabase
-      .from('author')
-      .select(`
-        id,
-        name,
-        contact_details,
-        author_book (
-          book_isbn,
-          book (
-            isbn,
-            name,
-            summary,
-            genre
-          )
-        )
-      `);
-
-    if (error) {
-      console.error("Error fetching authors:", error);
-      throw error;
-    }
-
-    console.log("Authors data from Supabase:", data);
-    
-    if (!data || data.length === 0) {
-      console.warn("No authors found in database. Check if data exists in Supabase.");
-      // Display sample data for demonstration if no real data exists
-      return getSampleAuthors();
-    }
-    
-    return data?.map(author => ({
-      id: author.id,
-      name: author.name,
-      contactDetails: author.contact_details || 'No contact details',
-      books: author.author_book?.map(ab => ({
-        isbn: ab.book?.isbn || 'Unknown ISBN',
-        title: ab.book?.name || 'Unknown Title'
-      })) || []
-    })) || getSampleAuthors();
-  } catch (err) {
-    console.error("Failed to fetch authors:", err);
-    toast.error("Failed to fetch authors");
-    return getSampleAuthors();
+// Function to get sample books with real customer reviews
+const getSampleBooksWithCustomerReviews = (customers) => {
+  if (!customers || customers.length === 0) {
+    return getSampleBooks(); // Fall back to default sample books if no customers
   }
+  
+  // Create sample books with reviews from real customers
+  const sampleBooks = getSampleBooks();
+  
+  // Assign random reviews from actual customers to each book
+  return sampleBooks.map(book => {
+    // Generate 1-3 random reviews per book
+    const numReviews = Math.floor(Math.random() * 3) + 1;
+    const bookReviews = [];
+    
+    for (let i = 0; i < numReviews; i++) {
+      // Pick a random customer
+      const randomCustomer = customers[Math.floor(Math.random() * customers.length)];
+      
+      // Generate a random rating (3-5 stars)
+      const rating = Math.floor(Math.random() * 3) + 3;
+      
+      // Sample review comments
+      const comments = [
+        "Really enjoyed this book!",
+        "Great read, highly recommend.",
+        "Interesting perspective on the subject.",
+        "The author did a fantastic job explaining complex concepts.",
+        "Couldn't put it down once I started reading.",
+        "The content was engaging from start to finish.",
+        "A must-read for anyone interested in this topic.",
+        "Would definitely recommend to friends."
+      ];
+      
+      // Add a random comment
+      const comment = comments[Math.floor(Math.random() * comments.length)];
+      
+      bookReviews.push({
+        rating,
+        user_id: randomCustomer.id,
+        comment
+      });
+    }
+    
+    // Calculate average rating
+    const avgRating = bookReviews.reduce((sum, review) => sum + review.rating, 0) / bookReviews.length;
+    
+    return {
+      ...book,
+      rating: parseFloat(avgRating.toFixed(1)),
+      reviews: bookReviews
+    };
+  });
 };
 
 // Sample data to show when no data is returned from Supabase
@@ -354,4 +354,67 @@ const getSampleAuthors = () => {
       ]
     }
   ];
+};
+
+export const fetchAuthors = async () => {
+  console.log("Fetching authors...");
+  
+  try {
+    // First, check if the author table exists and has data
+    const { count, error: countError } = await supabase
+      .from('author')
+      .select('*', { count: 'exact', head: true });
+    
+    if (countError) {
+      console.error("Error checking author table:", countError);
+      throw countError;
+    }
+    
+    console.log(`Author table check: Found ${count} records`);
+    
+    // Fetch all authors directly, without filters or limitations
+    const { data, error } = await supabase
+      .from('author')
+      .select(`
+        id,
+        name,
+        contact_details,
+        author_book (
+          book_isbn,
+          book (
+            isbn,
+            name,
+            summary,
+            genre
+          )
+        )
+      `);
+
+    if (error) {
+      console.error("Error fetching authors:", error);
+      throw error;
+    }
+
+    console.log("Authors data from Supabase:", data);
+    
+    if (!data || data.length === 0) {
+      console.warn("No authors found in database. Check if data exists in Supabase.");
+      // Display sample data for demonstration if no real data exists
+      return getSampleAuthors();
+    }
+    
+    return data?.map(author => ({
+      id: author.id,
+      name: author.name,
+      contactDetails: author.contact_details || 'No contact details',
+      books: author.author_book?.map(ab => ({
+        isbn: ab.book?.isbn || 'Unknown ISBN',
+        title: ab.book?.name || 'Unknown Title'
+      })) || []
+    })) || getSampleAuthors();
+  } catch (err) {
+    console.error("Failed to fetch authors:", err);
+    toast.error("Failed to fetch authors");
+    return getSampleAuthors();
+  }
 };
