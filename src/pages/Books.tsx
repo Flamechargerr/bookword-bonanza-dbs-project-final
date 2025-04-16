@@ -6,12 +6,14 @@ import MainNav from "@/components/MainNav";
 import { fetchBooks } from "@/utils/supabaseQueries";
 import { Input } from "@/components/ui/input";
 import { Search, BookOpen } from "lucide-react";
+import BooksFilter from '@/components/BooksFilter';
 
 const Books = () => {
   const [books, setBooks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterGenre, setFilterGenre] = useState("");
+  const [availableGenres, setAvailableGenres] = useState<string[]>([]);
 
   useEffect(() => {
     loadBooks();
@@ -22,6 +24,14 @@ const Books = () => {
     try {
       const booksData = await fetchBooks();
       setBooks(booksData);
+      
+      // Extract unique genres from books
+      const genres = booksData
+        .map(book => book.genre)
+        .filter((genre): genre is string => 
+          genre !== undefined && genre !== null && genre !== ""
+        );
+      setAvailableGenres([...new Set(genres)]);
     } catch (error) {
       console.error("Failed to load books:", error);
     } finally {
@@ -55,6 +65,16 @@ const Books = () => {
             />
           </div>
         </div>
+
+        {/* Add filter component */}
+        <BooksFilter 
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          filterGenre={filterGenre}
+          setFilterGenre={setFilterGenre}
+          genres={availableGenres}
+        />
+
         <BooksList 
           books={books} 
           isLoading={isLoading} 
