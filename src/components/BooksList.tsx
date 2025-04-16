@@ -42,7 +42,15 @@ const BooksList: React.FC<BooksListProps> = ({ books, isLoading, handleRetry, se
       <div className="flex flex-col items-center justify-center h-[60vh]">
         <div className="relative">
           <div className="h-16 w-16 border-4 border-t-purple-600 border-purple-200 rounded-full animate-spin"></div>
-          <BookCard className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-6 w-6 text-purple-600" />
+          {/* Removing the className prop that's causing the TypeScript error */}
+          <BookCard 
+            isbn="loading" 
+            title="Loading" 
+            author="Loading" 
+            rating={0} 
+            genre="Loading" 
+            imageUrl="" 
+          />
         </div>
         <p className="mt-4 text-purple-600 font-medium">Loading your library...</p>
       </div>
@@ -86,7 +94,17 @@ const BooksList: React.FC<BooksListProps> = ({ books, isLoading, handleRetry, se
           transition={{ delay: index * 0.1 }}
           whileHover={{ scale: 1.02 }}
         >
-          <BookCard {...book} />
+          <BookCard 
+            isbn={book.isbn}
+            title={book.title}
+            author={book.author}
+            rating={book.rating}
+            genre={book.genre || "Uncategorized"} 
+            imageUrl={book.imageUrl}
+            summary={book.summary}
+            authorDetails={book.authorDetails}
+            reviews={book.reviews}
+          />
         </motion.div>
       ))}
     </div>
