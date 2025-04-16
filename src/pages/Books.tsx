@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -156,8 +157,7 @@ const Books = () => {
           ),
           books_read (
             rating,
-            user_id,
-            comment
+            user_id
           )
         `);
 
@@ -230,7 +230,7 @@ const Books = () => {
         reviews: book.books_read?.map(review => ({
           rating: review.rating,
           user_id: review.user_id,
-          comment: review.comment
+          comment: "No comment available" // Since comment doesn't exist, use a default value
         })) || []
       }));
     }
