@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { Search, Filter, BookOpen, AlertCircle, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Search, Filter, BookOpen, AlertCircle, RefreshCw, Sparkles } from 'lucide-react';
 import MainNav from "@/components/MainNav";
 import BookCard from "@/components/BookCard";
 import { Input } from "@/components/ui/input";
@@ -25,7 +24,9 @@ const fetchBooks = async () => {
       image_url,
       author_book (
         author (
-          name
+          name,
+          contact_details,
+          id
         )
       )
     `);
@@ -137,10 +138,97 @@ const pageVariants = {
 const Books = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterGenre, setFilterGenre] = useState("");
-  
+
   const { data: books, isLoading, error, refetch } = useQuery({
     queryKey: ['books'],
-    queryFn: fetchBooks
+    queryFn: async () => {
+      console.log("Fetching books...");
+      const { data: booksData, error: booksError } = await supabase
+        .from('book')
+        .select(`
+          *,
+          author_book (
+            author (
+              id,
+              name,
+              contact_details
+            )
+          ),
+          books_read (
+            rating,
+            user_id
+          )
+        `);
+
+      if (booksError) {
+        console.error("Error fetching books:", booksError);
+        throw booksError;
+      }
+
+      console.log("Books fetched:", booksData);
+      
+      if (!booksData || booksData.length === 0) {
+        return [
+          {
+            isbn: "978-0451524935",
+            title: "1984",
+            author: "George Orwell",
+            rating: 4.7,
+            genre: "Dystopian Fiction",
+            imageUrl: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e",
+            summary: "A dystopian novel set in a totalitarian society led by Big Brother."
+          },
+          {
+            isbn: "978-0061120084",
+            title: "To Kill a Mockingbird",
+            author: "Harper Lee",
+            rating: 4.8,
+            genre: "Classic",
+            imageUrl: "https://images.unsplash.com/photo-1544947950-fa07a98d237f",
+            summary: "Set in the American South during the 1930s, the story follows Scout Finch and her father, Atticus, who defends a Black man accused of a terrible crime."
+          },
+          {
+            isbn: "978-0307474278",
+            title: "The Da Vinci Code",
+            author: "Dan Brown",
+            rating: 4.5,
+            genre: "Thriller",
+            imageUrl: "https://images.unsplash.com/photo-1546521343-4eb2c01aa44b",
+            summary: "A thriller novel that follows symbologist Robert Langdon as he investigates a murder in the Louvre Museum and discovers a battle between the Priory of Sion and Opus Dei."
+          },
+          {
+            isbn: "978-0743273565",
+            title: "The Great Gatsby",
+            author: "F. Scott Fitzgerald",
+            rating: 4.3,
+            genre: "Classic",
+            imageUrl: "https://images.unsplash.com/photo-1541963463532-d68292c34b19",
+            summary: "Set in the Jazz Age, the novel explores themes of decadence, idealism, and the American Dream through the life of millionaire Jay Gatsby."
+          },
+          {
+            isbn: "978-0618640157",
+            title: "The Lord of the Rings",
+            author: "J.R.R. Tolkien",
+            rating: 4.9,
+            genre: "Fantasy",
+            imageUrl: "https://images.unsplash.com/photo-1491841550275-ad7854e35ca6",
+            summary: "An epic high-fantasy novel that follows hobbit Frodo Baggins as he embarks on a quest to destroy the One Ring and defeat the Dark Lord Sauron."
+          }
+        ];
+      }
+
+      return booksData.map(book => ({
+        isbn: book.isbn,
+        title: book.name,
+        author: book.author_book?.[0]?.author?.name || "Unknown Author",
+        rating: book.rating || 0,
+        genre: book.genre || "Unknown",
+        imageUrl: book.image_url || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e",
+        summary: book.summary || "No summary available.",
+        authorDetails: book.author_book?.[0]?.author || null,
+        reviews: book.books_read || []
+      }));
+    }
   });
 
   useEffect(() => {
@@ -238,8 +326,18 @@ const Books = () => {
           transition={{ duration: 0.5 }}
           className="text-center mb-10"
         >
-          <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 mb-4 relative inline-block">
-            <span className="relative z-10">Book Catalog</span>
+          <h1 className="text-5xl font-bold mb-4 relative inline-block">
+            <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+              Book Catalog
+              <motion.span
+                initial={{ rotate: 0 }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                className="absolute -right-8 -top-2"
+              >
+                <Sparkles className="h-6 w-6 text-purple-400" />
+              </motion.span>
+            </span>
             <motion.span 
               className="absolute bottom-2 left-0 w-full h-3 bg-gradient-to-r from-purple-400/50 to-indigo-400/50 transform rotate-1 z-0 rounded-full"
               initial={{ scaleX: 0 }}
@@ -247,7 +345,7 @@ const Books = () => {
               transition={{ delay: 0.5, duration: 0.8 }}
             ></motion.span>
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto animate-fade-in">
             Explore our collection of books across various genres and topics.
           </p>
         </motion.section>
@@ -318,25 +416,30 @@ const Books = () => {
             </Button>
           </motion.div>
         ) : (
-          <motion.div 
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
-          >
-            {filteredBooks?.map((book) => (
-              <motion.div 
-                key={book.isbn}
-                variants={item}
-                whileHover={{ 
-                  scale: 1.03,
-                  boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
-                }}
-              >
-                <BookCard {...book} />
-              </motion.div>
-            ))}
-          </motion.div>
+          <AnimatePresence>
+            <motion.div 
+              variants={container}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
+            >
+              {filteredBooks?.map((book, index) => (
+                <motion.div 
+                  key={book.isbn}
+                  variants={item}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ 
+                    scale: 1.03,
+                    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+                  }}
+                >
+                  <BookCard {...book} />
+                </motion.div>
+              ))}
+            </motion.div>
+          </AnimatePresence>
         )}
 
         <motion.div 
